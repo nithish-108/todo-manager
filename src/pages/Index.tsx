@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,24 +9,25 @@ import { AuthModal } from "@/components/AuthModal";
 import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskFilters } from "@/components/TaskFilters";
+import { Task } from "@/types/task";
 
 const Index = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock data for demonstration
-  const mockTasks = [
+  // Mock data for demonstration with proper literal types
+  const mockTasks: Task[] = [
     {
       id: 1,
       title: "Complete project proposal",
       description: "Finish the quarterly project proposal document",
-      status: "in-progress",
-      priority: "high",
+      status: "in-progress" as const,
+      priority: "high" as const,
       dueDate: "2024-01-15",
       sharedWith: ["john@example.com"],
       createdAt: "2024-01-10"
@@ -36,8 +36,8 @@ const Index = () => {
       id: 2,
       title: "Review team feedback",
       description: "Go through all team feedback from last sprint",
-      status: "todo",
-      priority: "medium",
+      status: "todo" as const,
+      priority: "medium" as const,
       dueDate: "2024-01-12",
       sharedWith: [],
       createdAt: "2024-01-08"
@@ -46,8 +46,8 @@ const Index = () => {
       id: 3,
       title: "Update documentation",
       description: "Update API documentation with latest changes",
-      status: "completed",
-      priority: "low",
+      status: "completed" as const,
+      priority: "low" as const,
       dueDate: "2024-01-10",
       sharedWith: ["sarah@example.com", "mike@example.com"],
       createdAt: "2024-01-05"
@@ -59,12 +59,12 @@ const Index = () => {
     setShowAuthModal(false);
   };
 
-  const handleTaskEdit = (task) => {
+  const handleTaskEdit = (task: Task) => {
     setSelectedTask(task);
     setShowTaskForm(true);
   };
 
-  const handleTaskSave = (taskData) => {
+  const handleTaskSave = (taskData: any) => {
     console.log("Saving task:", taskData);
     setShowTaskForm(false);
     setSelectedTask(null);

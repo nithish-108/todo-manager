@@ -1,21 +1,10 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CalendarIcon, UsersIcon, EditIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  status: "todo" | "in-progress" | "completed";
-  priority: "low" | "medium" | "high";
-  dueDate: string;
-  sharedWith: string[];
-  createdAt: string;
-}
+import { Task } from "@/types/task";
 
 interface TaskCardProps {
   task: Task;
