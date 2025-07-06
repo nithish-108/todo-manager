@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +11,12 @@ import { TaskCard } from "@/components/TaskCard";
 import { TaskForm } from "@/components/TaskForm";
 import { TaskFilters } from "@/components/TaskFilters";
 import { Task } from "@/types/task";
+import { useAuth } from "@/hooks/useAuth";
+import { useTasks } from "@/hooks/useTasks";
 
 const Index = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, loading, signOut } = useAuth();
+  const { tasks, isLoading, updateTask, deleteTask } = useTasks();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -20,43 +24,12 @@ const Index = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mock data for demonstration with proper literal types
-  const mockTasks: Task[] = [
-    {
-      id: 1,
-      title: "Complete project proposal",
-      description: "Finish the quarterly project proposal document",
-      status: "in-progress" as const,
-      priority: "high" as const,
-      dueDate: "2024-01-15",
-      sharedWith: ["john@example.com"],
-      createdAt: "2024-01-10"
-    },
-    {
-      id: 2,
-      title: "Review team feedback",
-      description: "Go through all team feedback from last sprint",
-      status: "todo" as const,
-      priority: "medium" as const,
-      dueDate: "2024-01-12",
-      sharedWith: [],
-      createdAt: "2024-01-08"
-    },
-    {
-      id: 3,
-      title: "Update documentation",
-      description: "Update API documentation with latest changes",
-      status: "completed" as const,
-      priority: "low" as const,
-      dueDate: "2024-01-10",
-      sharedWith: ["sarah@example.com", "mike@example.com"],
-      createdAt: "2024-01-05"
-    }
-  ];
-
   const handleLogin = () => {
-    setIsAuthenticated(true);
     setShowAuthModal(false);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   const handleTaskEdit = (task: Task) => {
@@ -65,12 +38,18 @@ const Index = () => {
   };
 
   const handleTaskSave = (taskData: any) => {
-    console.log("Saving task:", taskData);
     setShowTaskForm(false);
     setSelectedTask(null);
   };
 
-  const filteredTasks = mockTasks.filter(task => {
+  const handleStatusChange = (taskId: number, status: string) => {
+    updateTask({ 
+      id: taskId, 
+      status: status as 'todo' | 'in-progress' | 'completed' 
+    });
+  };
+
+  const filteredTasks = tasks.filter(task => {
     const matchesStatus = filterStatus === "all" || task.status === filterStatus;
     const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
     const matchesSearch = searchQuery === "" || 
@@ -80,7 +59,18 @@ const Index = () => {
     return matchesStatus && matchesPriority && matchesSearch;
   });
 
-  if (!isAuthenticated) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-xl">
@@ -125,7 +115,7 @@ const Index = () => {
                 TodoFlow
               </h1>
               <Badge variant="secondary" className="hidden sm:inline-flex">
-                Personal Dashboard
+                Welcome, {user.email}
               </Badge>
             </div>
             <div className="flex items-center space-x-3">
@@ -136,7 +126,7 @@ const Index = () => {
                 <PlusIcon className="w-4 h-4 mr-2" />
                 New Task
               </Button>
-              <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
+              <Button variant="outline" onClick={handleSignOut}>
                 Sign Out
               </Button>
             </div>
@@ -159,15 +149,15 @@ const Index = () => {
             <div className="flex items-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>{mockTasks.filter(t => t.status === 'completed').length} Completed</span>
+                <span>{tasks.filter(t => t.status === 'completed').length} Completed</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span>{mockTasks.filter(t => t.status === 'in-progress').length} In Progress</span>
+                <span>{tasks.filter(t => t.status === 'in-progress').length} In Progress</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                <span>{mockTasks.filter(t => t.status === 'todo').length} Todo</span>
+                <span>{tasks.filter(t => t.status === 'todo').length} Todo</span>
               </div>
             </div>
           </div>
@@ -190,16 +180,23 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="all" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onEdit={() => handleTaskEdit(task)}
-                  onStatusChange={(status) => console.log("Status changed:", status)}
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading tasks...</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredTasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onEdit={() => handleTaskEdit(task)}
+                    onStatusChange={(status) => handleStatusChange(task.id, status)}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="my" className="mt-6">
@@ -209,7 +206,7 @@ const Index = () => {
                   key={task.id}
                   task={task}
                   onEdit={() => handleTaskEdit(task)}
-                  onStatusChange={(status) => console.log("Status changed:", status)}
+                  onStatusChange={(status) => handleStatusChange(task.id, status)}
                 />
               ))}
             </div>
@@ -222,7 +219,7 @@ const Index = () => {
                   key={task.id}
                   task={task}
                   onEdit={() => handleTaskEdit(task)}
-                  onStatusChange={(status) => console.log("Status changed:", status)}
+                  onStatusChange={(status) => handleStatusChange(task.id, status)}
                 />
               ))}
             </div>
@@ -238,14 +235,14 @@ const Index = () => {
                   key={task.id}
                   task={task}
                   onEdit={() => handleTaskEdit(task)}
-                  onStatusChange={(status) => console.log("Status changed:", status)}
+                  onStatusChange={(status) => handleStatusChange(task.id, status)}
                 />
               ))}
             </div>
           </TabsContent>
         </Tabs>
 
-        {filteredTasks.length === 0 && (
+        {filteredTasks.length === 0 && !isLoading && (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2">No tasks found</div>
             <div className="text-gray-500 text-sm">
